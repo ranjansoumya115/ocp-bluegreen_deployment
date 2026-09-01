@@ -1,0 +1,112 @@
+# Blue-Green Deployment — Command Sheet
+
+Repo: `ranjansoumya115/ocp-bluegreen_deployment`
+
+## 1. Clone the repo
+
+```bash
+git clone https://github.com/ranjansoumya115/ocp-bluegreen_deployment.git
+cd ocp-bluegreen_deployment
+```
+
+## 2. Create a project/namespace
+
+```bash
+oc new-project bluegreen-demo
+```
+
+## 3. Deploy blue (initial live version)
+
+```bash
+oc apply -k overlays/blue
+```
+
+Verify:
+```bash
+oc get pods -l version=blue
+oc get svc app-blue-svc app-live-svc
+oc get route myapp-route
+```
+
+## 4. Get the route URL and confirm blue is live
+
+```bash
+oc get route myapp-route -o jsonpath='{.spec.host}{"\n"}'
+curl -k https://$(oc get route myapp-route -o jsonpath='{.spec.host}')
+```
+
+## 5. Deploy green (new version) alongside blue
+
+```bash
+oc apply -k overlays/green
+```
+
+Verify green pods are up (but not yet live):
+```bash
+oc get pods -l version=green
+oc get svc app-green-svc
+```
+
+## 6. Test green internally before cutover
+
+```bash
+oc port-forward svc/app-green-svc 8081:8080
+```
+In another terminal:
+```bash
+curl localhost:8081
+```
+Ctrl+C to stop the port-forward when done.
+
+## 7. Check what the live Service currently points to
+
+```bash
+oc get svc app-live-svc -o jsonpath='{.spec.selector}{"\n"}'
+```
+
+## 8. Cut traffic over to green
+
+```bash
+oc patch svc app-live-svc -p '{"spec":{"selector":{"app":"myapp","version":"green"}}}'
+```
+
+## 9. Confirm the route now serves green
+
+```bash
+curl -k https://$(oc get route myapp-route -o jsonpath='{.spec.host}')
+oc get svc app-live-svc -o jsonpath='{.spec.selector}{"\n"}'
+```
+
+## 10. Rollback to blue (if something's wrong with green)
+
+```bash
+oc patch svc app-live-svc -p '{"spec":{"selector":{"app":"myapp","version":"blue"}}}'
+```
+
+## 11. Retire blue once green is confirmed stable
+
+```bash
+oc delete -k overlays/blue
+```
+
+## 12. Full cleanup (remove everything)
+
+```bash
+oc delete -k overlays/blue
+oc delete -k overlays/green
+oc delete -k base
+oc delete project bluegreen-demo
+```
+
+## Quick reference — what each command does
+
+| Command | Purpose |
+|---|---|
+| `oc apply -k overlays/blue` | Deploy blue Deployment + Service (+ shared base) |
+| `oc apply -k overlays/green` | Deploy green Deployment + Service (+ shared base) |
+| `oc get pods -l version=<color>` | List pods for one color |
+| `oc port-forward svc/app-green-svc 8081:8080` | Test green locally before cutover |
+| `oc patch svc app-live-svc -p '...version":"green"...'` | Switch live traffic to green |
+| `oc patch svc app-live-svc -p '...version":"blue"...'` | Roll back live traffic to blue |
+| `oc get route myapp-route -o jsonpath='{.spec.host}'` | Get the external URL |
+| `oc delete -k overlays/<color>` | Remove one color's Deployment + Service |
