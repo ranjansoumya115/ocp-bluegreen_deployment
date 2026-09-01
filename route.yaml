@@ -1,0 +1,10 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: myapp-route
+spec:
+  to:
+    kind: Service
+    name: app-live-svc
+  port:
+    targetPort: 8080
