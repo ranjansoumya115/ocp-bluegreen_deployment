@@ -1,0 +1,102 @@
+# Blue Deployment (v1 - live)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-blue
+  labels:
+    app: myapp
+    version: blue
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: myapp
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: myapp
+        version: blue
+    spec:
+      containers:
+      - name: httpd-app
+        image: quay.io/soumya7410/httpd-app:v1
+        ports:
+        - containerPort: 8080
+---
+# Green Deployment (v2 - new version)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-green
+  labels:
+    app: myapp
+    version: green
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: myapp
+      version: green
+  template:
+    metadata:
+      labels:
+        app: myapp
+        version: green
+    spec:
+      containers:
+      - name: httpd-app
+        image: quay.io/soumya7410/httpd-app:v2
+        ports:
+        - containerPort: 8080
+---
+# Blue Service (internal test)
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-blue-svc
+spec:
+  selector:
+    app: myapp
+    version: blue
+  ports:
+  - port: 8080
+    targetPort: 8080
+---
+# Green Service (internal test)
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-green-svc
+spec:
+  selector:
+    app: myapp
+    version: green
+  ports:
+  - port: 8080
+    targetPort: 8080
+---
+# Live Service (Route points here - flip this selector to cut over)
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-live-svc
+spec:
+  selector:
+    app: myapp
+    version: blue
+  ports:
+  - port: 8080
+    targetPort: 8080
+---
+# Route (never changes - always points to app-live-svc)
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: myapp-route
+spec:
+  to:
+    kind: Service
+    name: app-live-svc
+  port:
+    targetPort: 8080
