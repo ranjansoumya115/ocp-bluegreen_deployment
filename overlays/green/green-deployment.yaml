@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-green
+  labels:
+    app: myapp
+    version: green
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: myapp
+      version: green
+  template:
+    metadata:
+      labels:
+        app: myapp
+        version: green
+    spec:
+      containers:
+      - name: httpd-app
+        image: quay.io/soumya7410/httpd-app:v2
+        ports:
+        - containerPort: 8080
