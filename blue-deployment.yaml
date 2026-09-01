@@ -19,6 +19,6 @@ spec:
     spec:
       containers:
       - name: httpd-app
-        image: quay.io/soumya7410/httpd-app:v1
+        image: quay.io/soumya7410/httpd-app:latest
         ports:
         - containerPort: 8080
