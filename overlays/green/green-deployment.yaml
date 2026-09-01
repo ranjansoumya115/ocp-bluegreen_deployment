@@ -19,6 +19,14 @@ spec:
     spec:
       containers:
       - name: httpd-app
-        image: quay.io/soumya7410/httpd-app:v2
+        image: quay.io/soumya7410/httpd-app:latest
         ports:
         - containerPort: 8080
+        volumeMounts:
+        - name: content
+          mountPath: /var/www/html/index.html
+          subPath: index.html
+      volumes:
+      - name: content
+        configMap:
+          name: app-green-content
