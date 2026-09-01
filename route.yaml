@@ -8,3 +8,6 @@ spec:
     name: app-live-svc
   port:
     targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
